@@ -55,7 +55,7 @@ export function EvolucaoChart({ history }: Props) {
           width={48}
         />
         <Tooltip
-          formatter={(value: number) => [yToLabel(value), 'Status']}
+          formatter={(value) => [yToLabel(typeof value === 'number' ? value : 0), 'Status']}
           contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', fontSize: '11px' }}
           labelStyle={{ color: '#888' }}
           itemStyle={{ color: lineColor }}
