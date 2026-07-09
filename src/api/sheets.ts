@@ -1,8 +1,8 @@
 import type { CheckIn, StatusDimensao, StatusFinal } from '../types'
 
 const SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets'
-const SHEET_ID = import.meta.env.VITE_SHEETS_ID
-const API_KEY = import.meta.env.VITE_SHEETS_API_KEY
+const SHEET_ID = '1tKttwrjDWqjX7T7NxNfj-k1GctyaA91o0O7nNLYNwsk'
+const API_KEY = 'AIzaSyC0Ui1ho9INokD7gZ9cfloqXKluknVkIPU'
 
 const VALID_STATUS_FINAL = new Set<string>(['SAFE', 'CARE', 'DANGER'])
 const VALID_STATUS_DIMENSAO = new Set<string>(['🟢 BOM', '🟡 NORMAL', '🔴 RUIM'])
