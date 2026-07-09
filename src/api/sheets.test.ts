@@ -33,6 +33,18 @@ describe('parseRow', () => {
     expect(typeof result.scoreResultados).toBe('number')
     expect(result.scoreResultados).toBe(4.2)
   })
+
+  it('normalizes emoji-prefixed statusFinal from Sheets (e.g. "🔴 DANGER" → "DANGER")', () => {
+    const rowWithEmoji = [...VALID_ROW]
+    rowWithEmoji[9] = '🔴 DANGER'
+    expect(parseRow(rowWithEmoji).statusFinal).toBe('DANGER')
+
+    rowWithEmoji[9] = '🟡 CARE'
+    expect(parseRow(rowWithEmoji).statusFinal).toBe('CARE')
+
+    rowWithEmoji[9] = '🟢 SAFE'
+    expect(parseRow(rowWithEmoji).statusFinal).toBe('SAFE')
+  })
 })
 
 describe('fetchStatusAtual', () => {

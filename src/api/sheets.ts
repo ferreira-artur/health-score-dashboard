@@ -8,8 +8,10 @@ const VALID_STATUS_FINAL = new Set<string>(['SAFE', 'CARE', 'DANGER'])
 const VALID_STATUS_DIMENSAO = new Set<string>(['🟢 BOM', '🟡 NORMAL', '🔴 RUIM'])
 
 function toStatusFinal(v: string): StatusFinal {
-  if (!VALID_STATUS_FINAL.has(v)) throw new Error(`Invalid StatusFinal: "${v}"`)
-  return v as StatusFinal
+  // Sheets may return "🟡 CARE", "🟢 SAFE", "🔴 DANGER" — strip emoji prefix
+  const normalized = v.includes(' ') ? v.split(' ').pop()! : v
+  if (!VALID_STATUS_FINAL.has(normalized)) throw new Error(`Invalid StatusFinal: "${v}"`)
+  return normalized as StatusFinal
 }
 
 function toStatusDimensao(v: string): StatusDimensao {
