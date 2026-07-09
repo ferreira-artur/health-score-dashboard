@@ -40,7 +40,9 @@ async function fetchRange(range: string): Promise<string[][]> {
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Sheets API error: ${res.status}`)
   const data = await res.json()
-  console.log('[sheets] raw response for range', range, JSON.stringify(data.values?.slice(0, 3)))
+  console.log('[sheets] raw response for range:', range)
+  console.log('[sheets] values field present:', 'values' in data)
+  console.log('[sheets] first 2 rows:', JSON.stringify(data.values?.slice(0, 2)))
   return data.values ?? []
 }
 
@@ -53,9 +55,31 @@ export function clearCache() {
 }
 
 export function fetchStatusAtual(): Promise<CheckIn[]> {
+  console.log('[sheets] fetchStatusAtual called, cache:', statusAtualInflight ? 'HIT' : 'MISS')
   if (!statusAtualInflight) {
     statusAtualInflight = fetchRange('Status Atual!A2:K')
-      .then(rows => rows.filter(r => r.length >= 11).map(parseRow))
+      .then(rows => {
+        console.log('[sheets] total rows received:', rows.length)
+        console.log('[sheets] first row:', JSON.stringify(rows[0]))
+        const valid = rows.filter(r => r.length >= 11)
+        console.log('[sheets] rows passing length>=11 filter:', valid.length)
+        const results: CheckIn[] = []
+        for (let i = 0; i < valid.length; i++) {
+          try {
+            results.push(parseRow(valid[i]))
+          } catch (e) {
+            console.error(`[sheets] parseRow failed on row ${i}:`, JSON.stringify(valid[i]), e instanceof Error ? e.message : e)
+            throw e
+          }
+        }
+        console.log('[sheets] parsing complete, clients:', results.length)
+        return results
+      })
+      .catch(e => {
+        console.error('[sheets] fetchStatusAtual rejected:', e instanceof Error ? e.message : e)
+        statusAtualInflight = null
+        throw e
+      })
   }
   return statusAtualInflight
 }
