@@ -28,7 +28,8 @@ export function Dashboard() {
       setData(result)
       setLastUpdated(new Date())
     } catch (e) {
-      setError('Erro ao carregar dados. Verifique a conexão e tente novamente.')
+      console.error('[dashboard] load error:', e)
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setLoading(false)
     }

@@ -40,6 +40,7 @@ async function fetchRange(range: string): Promise<string[][]> {
   const res = await fetch(url)
   if (!res.ok) throw new Error(`Sheets API error: ${res.status}`)
   const data = await res.json()
+  console.log('[sheets] raw response for range', range, JSON.stringify(data.values?.slice(0, 3)))
   return data.values ?? []
 }
 
