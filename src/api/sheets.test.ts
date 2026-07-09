@@ -35,6 +35,44 @@ describe('parseRow', () => {
   })
 })
 
+describe('fetchStatusAtual', () => {
+  beforeEach(() => {
+    clearCache()
+    vi.restoreAllMocks()
+  })
+
+  it('fetches, parses, and returns CheckIn array', async () => {
+    const mockRows = [
+      ['05/07/2026', 'Empresa ABC', 'Ana Lima', '4.2', '🔴 RUIM', '6.1', '🟡 NORMAL', '8.5', '🟢 BOM', 'DANGER', ''],
+      ['03/07/2026', 'Empresa XYZ', 'Bruno Costa', '7', '🟢 BOM', '7', '🟢 BOM', '7', '🟢 BOM', 'SAFE', ''],
+    ]
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ values: mockRows }),
+    } as Response)
+
+    const result = await fetchStatusAtual()
+    expect(result).toHaveLength(2)
+    expect(result[0].cliente).toBe('Empresa ABC')
+    expect(result[0].statusFinal).toBe('DANGER')
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns cached result on second call without re-fetching', async () => {
+    const mockRows = [
+      ['05/07/2026', 'Empresa ABC', 'Ana Lima', '4.2', '🔴 RUIM', '6.1', '🟡 NORMAL', '8.5', '🟢 BOM', 'DANGER', ''],
+    ]
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ values: mockRows }),
+    } as Response)
+
+    await fetchStatusAtual()
+    await fetchStatusAtual()
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('fetchHistorico', () => {
   beforeEach(() => {
     clearCache()
@@ -59,5 +97,20 @@ describe('fetchHistorico', () => {
     expect(result[0].data).toBe('15/06/2026')
     expect(result[1].data).toBe('01/01/2026')
     expect(result.every(r => r.cliente === 'Empresa ABC')).toBe(true)
+  })
+
+  it('does not re-fetch on second call for different client', async () => {
+    const mockRows = [
+      ['01/01/2026', 'Empresa ABC', 'Ana Lima', '7', '🟢 BOM', '7', '🟢 BOM', '7', '🟢 BOM', 'SAFE', ''],
+      ['01/03/2026', 'Outro Cliente', 'Bruno', '8', '🟢 BOM', '8', '🟢 BOM', '8', '🟢 BOM', 'SAFE', ''],
+    ]
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ values: mockRows }),
+    } as Response)
+
+    await fetchHistorico('Empresa ABC')
+    await fetchHistorico('Outro Cliente')
+    expect(global.fetch).toHaveBeenCalledTimes(1)
   })
 })

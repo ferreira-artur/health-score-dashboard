@@ -4,18 +4,31 @@ const SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets'
 const SHEET_ID = import.meta.env.VITE_SHEETS_ID
 const API_KEY = import.meta.env.VITE_SHEETS_API_KEY
 
+const VALID_STATUS_FINAL = new Set<string>(['SAFE', 'CARE', 'DANGER'])
+const VALID_STATUS_DIMENSAO = new Set<string>(['🟢 BOM', '🟡 NORMAL', '🔴 RUIM'])
+
+function toStatusFinal(v: string): StatusFinal {
+  if (!VALID_STATUS_FINAL.has(v)) throw new Error(`Invalid StatusFinal: "${v}"`)
+  return v as StatusFinal
+}
+
+function toStatusDimensao(v: string): StatusDimensao {
+  if (!VALID_STATUS_DIMENSAO.has(v)) throw new Error(`Invalid StatusDimensao: "${v}"`)
+  return v as StatusDimensao
+}
+
 export function parseRow(row: string[]): CheckIn {
   return {
     data: row[0] ?? '',
     cliente: row[1] ?? '',
     account: row[2] ?? '',
     scoreResultados: parseFloat(row[3]) || 0,
-    statusResultados: row[4] as StatusDimensao,
+    statusResultados: toStatusDimensao(row[4]),
     scoreRelacionamento: parseFloat(row[5]) || 0,
-    statusRelacionamento: row[6] as StatusDimensao,
+    statusRelacionamento: toStatusDimensao(row[6]),
     scoreEntregas: parseFloat(row[7]) || 0,
-    statusEntregas: row[8] as StatusDimensao,
-    statusFinal: row[9] as StatusFinal,
+    statusEntregas: toStatusDimensao(row[8]),
+    statusFinal: toStatusFinal(row[9]),
     calculadoEm: row[10] ?? '',
   }
 }
@@ -28,32 +41,36 @@ async function fetchRange(range: string): Promise<string[][]> {
   return data.values ?? []
 }
 
-let statusAtualCache: CheckIn[] | null = null
-let historicoCache: string[][] | null = null
+let statusAtualInflight: Promise<CheckIn[]> | null = null
+let historicoInflight: Promise<string[][]> | null = null
 
 export function clearCache() {
-  statusAtualCache = null
-  historicoCache = null
+  statusAtualInflight = null
+  historicoInflight = null
 }
 
-export async function fetchStatusAtual(): Promise<CheckIn[]> {
-  if (statusAtualCache) return statusAtualCache
-  const rows = await fetchRange('Status Atual!A2:K')
-  statusAtualCache = rows.filter(r => r.length >= 10).map(parseRow)
-  return statusAtualCache
+export function fetchStatusAtual(): Promise<CheckIn[]> {
+  if (!statusAtualInflight) {
+    statusAtualInflight = fetchRange('Status Atual!A2:K')
+      .then(rows => rows.filter(r => r.length >= 11).map(parseRow))
+  }
+  return statusAtualInflight
 }
 
 export async function fetchHistorico(clienteNome: string): Promise<CheckIn[]> {
-  if (!historicoCache) {
-    historicoCache = await fetchRange('Health Score!A2:K')
+  if (!historicoInflight) {
+    historicoInflight = fetchRange('Health Score!A2:K')
   }
-  return historicoCache
-    .filter(r => r.length >= 10 && r[1] === clienteNome)
+  const rows = await historicoInflight
+  return rows
+    .filter(r => r.length >= 11 && r[1] === clienteNome)
     .map(parseRow)
     .sort((a, b) => {
       const toDate = (d: string) => {
+        if (!d) return 0
         const [day, month, year] = d.split('/')
-        return new Date(`${year}-${month}-${day}`).getTime()
+        const t = new Date(`${year}-${month}-${day}`).getTime()
+        return isNaN(t) ? 0 : t
       }
       return toDate(b.data) - toDate(a.data)
     })
