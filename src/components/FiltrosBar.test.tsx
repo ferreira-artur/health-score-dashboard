@@ -35,4 +35,20 @@ describe('FiltrosBar', () => {
     expect(screen.getByText('Ana Lima')).toBeInTheDocument()
     expect(screen.getByText('Bruno Costa')).toBeInTheDocument()
   })
+
+  it('calls onStatusFilter when a pill button is clicked', () => {
+    const onStatusFilter = vi.fn()
+    render(<FiltrosBar {...defaultProps} onStatusFilter={onStatusFilter} />)
+    fireEvent.click(screen.getByText('DANGER'))
+    expect(onStatusFilter).toHaveBeenCalledWith('DANGER')
+  })
+
+  it('calls onAccountFilter when account is selected', () => {
+    const onAccountFilter = vi.fn()
+    render(<FiltrosBar {...defaultProps} onAccountFilter={onAccountFilter} />)
+    fireEvent.change(screen.getByRole('combobox'), {
+      target: { value: 'Ana Lima' },
+    })
+    expect(onAccountFilter).toHaveBeenCalledWith('Ana Lima')
+  })
 })
